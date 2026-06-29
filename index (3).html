@@ -1,0 +1,517 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,'Segoe UI',sans-serif);background:transparent}
+
+#app{max-width:680px;padding:0.5rem 0}
+
+/* HEADER */
+.game-header{text-align:center;padding:14px 0 10px;border-bottom:0.5px solid var(--border,#e0e0e0);margin-bottom:12px}
+.game-logo{font-size:26px;font-weight:500;color:var(--text-primary,#111);letter-spacing:-1px}
+.game-logo span{color:#378ADD}
+.game-tagline{font-size:12px;color:var(--text-muted,#888);margin-top:2px}
+.ods-badge{display:inline-flex;align-items:center;gap:5px;background:#E6F1FB;border:0.5px solid #B5D4F4;border-radius:20px;padding:3px 10px;font-size:11px;color:#185FA5;font-weight:500;margin-top:6px}
+
+/* SCOREBOARD */
+.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pcard{border:0.5px solid var(--border,#e0e0e0);border-radius:12px;padding:10px 12px;background:var(--surface-1,#f8f8f8);transition:all 0.2s}
+.pcard.active{border:2px solid #378ADD;background:#E6F1FB}
+.pcard-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.pcard-icon{font-size:20px}
+.pcard-name{font-size:13px;font-weight:500;color:var(--text-secondary,#555)}
+.pcard.active .pcard-name{color:#185FA5}
+.pcard-pos{font-size:11px;color:var(--text-muted,#888)}
+.pcard-bar{height:4px;background:var(--border,#e0e0e0);border-radius:2px;overflow:hidden;margin-top:6px}
+.pcard-fill{height:100%;background:#378ADD;border-radius:2px;transition:width 0.5s}
+
+/* BOARD */
+.board-section{background:var(--surface-1,#f8f8f8);border:0.5px solid var(--border,#e0e0e0);border-radius:12px;padding:10px;margin-bottom:10px}
+.board-legend{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#888)}
+.legend-dot{width:10px;height:10px;border-radius:3px}
+.ld-q{background:#E6F1FB}
+.ld-s{background:#FCEBEB}
+.ld-l{background:#EAF3DE}
+.ld-start{background:#EAF3DE}
+.ld-fin{background:#EEEDFE}
+
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:2px}
+.cell{border-radius:6px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 2px;position:relative;border:0.5px solid var(--border,#ddd);background:var(--surface-2,#fff);transition:transform 0.15s}
+.cell-num{font-size:9px;color:var(--text-muted,#aaa);position:absolute;top:2px;left:4px;font-weight:500}
+.cell-icon{font-size:14px;line-height:1}
+.cell-label{font-size:8px;color:var(--text-muted,#999);text-align:center;margin-top:1px;line-height:1.2}
+.cell-pawns{display:flex;gap:1px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.pawn{font-size:12px;animation:pop 0.3s ease}
+@keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+.cell.cq{background:#E6F1FB;border-color:#B5D4F4}
+.cell.cs{background:#FCEBEB;border-color:#F7C1C1}
+.cell.cl{background:#EAF3DE;border-color:#C0DD97}
+.cell.cstart{background:#EAF3DE;border-color:#639922}
+.cell.cfin{background:#EEEDFE;border-color:#AFA9EC}
+.cell.active-cell{transform:scale(1.08);box-shadow:0 0 0 2px #378ADD}
+
+/* TURN + DICE */
+.turn-panel{display:flex;align-items:center;gap:10px;background:var(--surface-2,#fff);border:0.5px solid var(--border,#e0e0e0);border-radius:12px;padding:10px 14px;margin-bottom:10px}
+.turn-avatar{font-size:28px}
+.turn-info{flex:1}
+.turn-name{font-size:14px;font-weight:500;color:var(--text-primary,#111)}
+.turn-hint{font-size:11px;color:var(--text-muted,#888);margin-top:1px}
+.dice-result{font-size:24px;min-width:32px;text-align:center}
+.btn-roll{background:#378ADD;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn-roll:hover{background:#185FA5}
+.btn-roll:disabled{opacity:0.35;cursor:not-allowed}
+
+/* QUESTION */
+.q-panel{background:var(--surface-2,#fff);border:0.5px solid #B5D4F4;border-radius:12px;padding:14px;margin-bottom:10px;display:none}
+.q-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.q-badge{background:#E6F1FB;color:#185FA5;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:500}
+.q-difficulty{font-size:10px;color:var(--text-muted,#888)}
+.q-stem{font-size:14px;color:var(--text-primary,#111);line-height:1.6;margin-bottom:12px;font-weight:500}
+.q-hint{font-size:11px;color:var(--text-muted,#888);margin-bottom:10px;font-style:italic}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.opt{border:0.5px solid var(--border-strong,#ccc);border-radius:8px;padding:9px 11px;font-size:12px;cursor:pointer;background:var(--surface-1,#f8f8f8);color:var(--text-primary,#111);text-align:left;transition:all 0.15s;line-height:1.4}
+.opt:hover:not(:disabled){background:#E6F1FB;border-color:#378ADD;color:#185FA5}
+.opt.correct{background:#EAF3DE;border-color:#639922;color:#27500A}
+.opt.wrong{background:#FCEBEB;border-color:#E24B4A;color:#791F1F}
+.q-feedback{font-size:12px;margin-top:8px;padding:7px 10px;border-radius:6px;display:none;line-height:1.5}
+.q-feedback.ok{background:#EAF3DE;color:#27500A}
+.q-feedback.fail{background:#FCEBEB;color:#791F1F}
+
+/* LOG */
+.log-panel{border-top:0.5px solid var(--border,#e0e0e0);padding-top:10px}
+.log-title{font-size:10px;font-weight:500;color:var(--text-muted,#aaa);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.log-entry{font-size:11px;color:var(--text-secondary,#666);padding:3px 0;border-bottom:0.5px solid var(--border,#eee);line-height:1.5}
+.log-entry b{color:var(--text-primary,#111)}
+
+/* WINNER */
+.winner-panel{background:#EEEDFE;border:2px solid #AFA9EC;border-radius:12px;padding:20px;text-align:center;display:none;margin-bottom:10px}
+.winner-big{font-size:36px;margin-bottom:6px}
+.winner-title{font-size:18px;font-weight:500;color:#3C3489}
+.winner-sub{font-size:12px;color:#534AB7;margin-top:4px}
+.winner-ods{font-size:11px;color:#534AB7;margin-top:8px;padding:6px 12px;background:#CECBF6;border-radius:20px;display:inline-block}
+.btn-restart{margin-top:12px;border:1.5px solid #534AB7;background:transparent;color:#3C3489;border-radius:8px;padding:8px 22px;font-size:12px;font-weight:500;cursor:pointer}
+.btn-restart:hover{background:#CECBF6}
+
+/* SETUP */
+.setup-panel{background:var(--surface-2,#fff);border:0.5px solid var(--border,#e0e0e0);border-radius:12px;padding:16px;margin-bottom:10px}
+.setup-title{font-size:14px;font-weight:500;color:var(--text-primary,#111);margin-bottom:12px}
+.setup-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.setup-label{font-size:12px;color:var(--text-secondary,#555);min-width:80px}
+.setup-input{flex:1;border:0.5px solid var(--border-strong,#ccc);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--surface-1,#f8f8f8);color:var(--text-primary,#111)}
+.player-icons{display:flex;gap:6px}
+.icon-opt{font-size:20px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent}
+.icon-opt.selected{border-color:#378ADD;background:#E6F1FB}
+.btn-start{background:#378ADD;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;width:100%;margin-top:4px}
+.btn-start:hover{background:#185FA5}
+.num-players{display:flex;gap:6px}
+.npl{border:0.5px solid var(--border-strong,#ccc);border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;background:var(--surface-1,#f8f8f8);color:var(--text-primary,#111)}
+.npl.sel{background:#378ADD;color:#fff;border-color:#378ADD}
+
+.separator{height:0.5px;background:var(--border,#e0e0e0);margin:10px 0}
+</style>
+
+<div id="app">
+  <div class="game-header">
+    <div class="game-logo">POLY<span>WARS</span></div>
+    <div class="game-tagline">Juego de tablero · Polinomios y Factorización · Matemática Básica</div>
+    <div class="ods-badge">🌍 ODS 4 — Educación de calidad</div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="setup-panel" id="setup">
+    <div class="setup-title">Configurar partida</div>
+    <div class="setup-row">
+      <span class="setup-label">Jugadores</span>
+      <div class="num-players">
+        <div class="npl sel" onclick="setNP(2)" id="np2">2</div>
+        <div class="npl" onclick="setNP(3)" id="np3">3</div>
+        <div class="npl" onclick="setNP(4)" id="np4">4</div>
+      </div>
+    </div>
+    <div id="player-inputs"></div>
+    <button class="btn-start" onclick="startGame()">Iniciar partida →</button>
+  </div>
+
+  <!-- SCOREBOARD -->
+  <div class="scoreboard" id="scoreboard" style="display:none"></div>
+
+  <!-- BOARD -->
+  <div class="board-section" id="board-section" style="display:none">
+    <div class="board-legend">
+      <div class="legend-item"><div class="legend-dot ld-start"></div>Inicio/Meta</div>
+      <div class="legend-item"><div class="legend-dot ld-q"></div>❓ Pregunta</div>
+      <div class="legend-item"><div class="legend-dot ld-s"></div>🐍 Serpiente</div>
+      <div class="legend-item"><div class="legend-dot ld-l"></div>🪜 Escalera</div>
+    </div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- TURN PANEL -->
+  <div class="turn-panel" id="turn-panel" style="display:none">
+    <div class="turn-avatar" id="t-avatar"></div>
+    <div class="turn-info">
+      <div class="turn-name" id="t-name"></div>
+      <div class="turn-hint" id="t-hint">Tira el dado para avanzar</div>
+    </div>
+    <div class="dice-result" id="t-dice"></div>
+    <button class="btn-roll" id="roll-btn" onclick="doRoll()">🎲 Tirar</button>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="q-panel" id="q-panel">
+    <div class="q-header">
+      <div class="q-badge" id="q-badge">Polinomios</div>
+      <div class="q-difficulty" id="q-diff"></div>
+    </div>
+    <div class="q-stem" id="q-stem"></div>
+    <div class="q-hint" id="q-hint"></div>
+    <div class="opts" id="q-opts"></div>
+    <div class="q-feedback" id="q-feedback"></div>
+  </div>
+
+  <!-- WINNER -->
+  <div class="winner-panel" id="winner-panel">
+    <div class="winner-big">🏆</div>
+    <div class="winner-title" id="w-title"></div>
+    <div class="winner-sub">¡Completó el tablero de POLY WARS!</div>
+    <div class="winner-ods">ODS 4: Educación de calidad — practicaste matemática de forma divertida</div>
+    <br>
+    <button class="btn-restart" onclick="resetToSetup()">Jugar de nuevo</button>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-panel" id="log-panel" style="display:none">
+    <div class="log-title">Historial de la partida</div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+const ICONS = ["🔵","🔴","🟢","🟡"];
+const ICON_NAMES = ["Azul","Rojo","Verde","Amarillo"];
+const SNAKES = {17:4, 28:9, 35:14, 22:3};
+const LADDERS = {3:13, 7:23, 20:31, 26:33};
+const TOTAL = 36;
+const Q_CELLS = [6,9,12,15,18,21,24,27,30];
+
+const QUESTIONS = [
+  {tema:"Suma de polinomios", dif:"Básico",
+   q:"Simplifica: (3x² + 2x) + (x² − 5x)",
+   hint:"Agrupa los términos semejantes (misma potencia de x)",
+   opts:["4x² − 3x","4x² + 3x","2x² − 3x","3x² − 3x"], ans:0},
+  {tema:"Resta de polinomios", dif:"Básico",
+   q:"Calcula: (5x³ − 2x) − (3x³ + x)",
+   hint:"Distribuye el signo negativo: − (3x³ + x) = −3x³ − x",
+   opts:["2x³ − 3x","2x³ + x","8x³ − x","2x³ − x"], ans:0},
+  {tema:"Factor común", dif:"Intermedio",
+   q:"Factoriza completamente: 6x² − 12x",
+   hint:"Busca el máximo factor común de 6x² y 12x",
+   opts:["6x(x − 2)","6(x² − 2x)","x(6x − 12)","3x(2x − 4)"], ans:0},
+  {tema:"Diferencia de cuadrados", dif:"Intermedio",
+   q:"Factoriza: x² − 16",
+   hint:"Recuerda: a² − b² = (a + b)(a − b)",
+   opts:["(x − 4)²","(x + 4)(x − 4)","(x − 8)(x + 2)","(x + 16)(x − 1)"], ans:1},
+  {tema:"Producto notable", dif:"Intermedio",
+   q:"Multiplica: (x + 3)(x − 3)",
+   hint:"Aplica la fórmula de diferencia de cuadrados",
+   opts:["x² − 6","x² + 9","x² − 9","x² − 6x"], ans:2},
+  {tema:"Cuadrado de binomio", dif:"Intermedio",
+   q:"Expande: (x + 2)²",
+   hint:"(a + b)² = a² + 2ab + b²",
+   opts:["x² + 4","x² + 2x + 4","x² + 4x + 4","x² + 4x"], ans:2},
+  {tema:"Factorización trinomio", dif:"Avanzado",
+   q:"Factoriza: x² + 5x + 6",
+   hint:"Busca dos números que sumen 5 y multipliquen 6",
+   opts:["(x+2)(x+3)","(x+1)(x+6)","(x−2)(x−3)","(x+6)(x−1)"], ans:0},
+  {tema:"Grado de polinomio", dif:"Básico",
+   q:"¿Cuál es el grado del polinomio 4x³ − 2x + 7?",
+   hint:"El grado es el mayor exponente de la variable",
+   opts:["1","2","3","7"], ans:2},
+  {tema:"Multiplicación", dif:"Intermedio",
+   q:"Multiplica: 2x(x² + 3x − 1)",
+   hint:"Distribuye 2x a cada término del paréntesis",
+   opts:["2x³ + 6x² − 2x","2x³ + 3x − 1","2x² + 6x − 2","x³ + 6x² − 2"], ans:0},
+  {tema:"Factor común doble", dif:"Avanzado",
+   q:"Factoriza completamente: 15x³ − 10x²",
+   hint:"Saca el MFC de los coeficientes y la variable con menor exponente",
+   opts:["5x²(3x − 2)","5x(3x² − 2x)","15x²(x − 1)","10x²(x − 1)"], ans:0},
+  {tema:"Diferencia de cuadrados", dif:"Avanzado",
+   q:"Factoriza: 9x² − 25",
+   hint:"Escribe como (3x)² − 5² y aplica la fórmula",
+   opts:["(9x − 25)","(3x+5)(3x−5)","(3x−5)²","(x+5)(x−5)"], ans:1},
+  {tema:"Cuadrado perfecto", dif:"Avanzado",
+   q:"Factoriza: x² − 4x + 4",
+   hint:"¿Es un trinomio cuadrado perfecto? Verifica: (a−b)² = a² − 2ab + b²",
+   opts:["(x − 2)²","(x + 2)²","(x−4)(x−1)","(x−2)(x+2)"], ans:0},
+  {tema:"Clasificación", dif:"Básico",
+   q:"¿Cómo se llama el polinomio que tiene exactamente 2 términos?",
+   hint:"Mono=1, Bi=2, Tri=3 términos",
+   opts:["Monomio","Binomio","Trinomio","Polinomio completo"], ans:1},
+  {tema:"Factorización completa", dif:"Avanzado",
+   q:"Factoriza completamente: 2x² − 8",
+   hint:"Primero saca factor común 2, luego factoriza lo que queda",
+   opts:["2(x² − 4)","2(x+2)(x−2)","2(x − 4)","Las opciones A y B son equivalentes"], ans:3},
+  {tema:"Suma de polinomios", dif:"Básico",
+   q:"¿Cuántos términos semejantes hay en: 3x + 2y − x + 4y?",
+   hint:"Términos semejantes tienen la misma variable con el mismo exponente",
+   opts:["0","2 pares","1 par","4 términos distintos"], ans:1},
+];
+
+let nPlayers = 2;
+let playerConfig = [];
+let G = {};
+
+function setNP(n){
+  nPlayers = n;
+  ["np2","np3","np4"].forEach(id => document.getElementById(id).classList.remove("sel"));
+  document.getElementById("np"+n).classList.add("sel");
+  buildInputs();
+}
+
+function buildInputs(){
+  const c = document.getElementById("player-inputs");
+  c.innerHTML = "";
+  for(let i=0;i<nPlayers;i++){
+    const saved = playerConfig[i] || {};
+    const row = document.createElement("div");
+    row.style.cssText = "margin-bottom:8px";
+    const icons = ICONS.map((ic,j)=>`<div class="icon-opt${(saved.icon||ICONS[i])===ic?' selected':''}" onclick="selectIcon(${i},${j})" id="ic-${i}-${j}">${ic}</div>`).join("");
+    row.innerHTML = `<div class="setup-row"><span class="setup-label">Jugador ${i+1}</span><input class="setup-input" id="pname-${i}" placeholder="Nombre jugador ${i+1}" value="${saved.name||''}"><div class="player-icons">${icons}</div></div>`;
+    c.appendChild(row);
+  }
+}
+
+function selectIcon(player, iconIdx){
+  for(let j=0;j<ICONS.length;j++){
+    const el = document.getElementById(`ic-${player}-${j}`);
+    if(el) el.classList.toggle("selected", j===iconIdx);
+  }
+}
+
+function getSelectedIcon(i){
+  for(let j=0;j<ICONS.length;j++){
+    const el = document.getElementById(`ic-${i}-${j}`);
+    if(el && el.classList.contains("selected")) return ICONS[j];
+  }
+  return ICONS[i];
+}
+
+function startGame(){
+  playerConfig = [];
+  for(let i=0;i<nPlayers;i++){
+    const nameEl = document.getElementById("pname-"+i);
+    playerConfig.push({
+      name: (nameEl && nameEl.value.trim()) || `Jugador ${i+1}`,
+      icon: getSelectedIcon(i),
+      pos: 0
+    });
+  }
+  G = { players: playerConfig.map(p=>({...p})), current:0, qPool:[...QUESTIONS], logs:[], done:false };
+  document.getElementById("setup").style.display="none";
+  document.getElementById("scoreboard").style.display="grid";
+  document.getElementById("board-section").style.display="block";
+  document.getElementById("turn-panel").style.display="flex";
+  document.getElementById("log-panel").style.display="block";
+  buildBoard();
+  renderAll();
+}
+
+function buildBoard(){
+  const board = document.getElementById("board");
+  board.innerHTML="";
+  let cells = [];
+  for(let row=5;row>=0;row--){
+    let rowArr=[];
+    for(let col=0;col<6;col++) rowArr.push(row*6+col+1);
+    if(row%2===1) rowArr.reverse();
+    cells.push(...rowArr);
+  }
+  cells.forEach(n=>{
+    const div = document.createElement("div");
+    let cls = "cell ";
+    if(n===1) cls+="cstart";
+    else if(n===TOTAL) cls+="cfin";
+    else if(SNAKES[n]) cls+="cs";
+    else if(LADDERS[n]) cls+="cl";
+    else if(Q_CELLS.includes(n)) cls+="cq";
+    div.className=cls;
+    div.id="cell-"+n;
+    let icon="", label="";
+    if(n===1){icon="🏁";label="INICIO";}
+    else if(n===TOTAL){icon="🎯";label="META";}
+    else if(SNAKES[n]){icon="🐍";label="→"+SNAKES[n];}
+    else if(LADDERS[n]){icon="🪜";label="→"+LADDERS[n];}
+    else if(Q_CELLS.includes(n)){icon="❓";label="Pregunta";}
+    div.innerHTML=`<span class="cell-num">${n}</span><div class="cell-icon">${icon}</div><div class="cell-label">${label}</div><div class="cell-pawns" id="pawns-${n}"></div>`;
+    board.appendChild(div);
+  });
+}
+
+function renderAll(){
+  renderScoreboard();
+  renderPawns();
+  renderTurn();
+}
+
+function renderScoreboard(){
+  const sb = document.getElementById("scoreboard");
+  sb.innerHTML="";
+  G.players.forEach((pl,i)=>{
+    const pct = Math.round((pl.pos/TOTAL)*100);
+    const div=document.createElement("div");
+    div.className="pcard"+(i===G.current?" active":"");
+    div.innerHTML=`<div class="pcard-top"><div class="pcard-icon">${pl.icon}</div><div><div class="pcard-name">${pl.name}</div><div class="pcard-pos">Casilla ${pl.pos} / ${TOTAL}</div></div></div><div class="pcard-bar"><div class="pcard-fill" style="width:${pct}%"></div></div>`;
+    sb.appendChild(div);
+  });
+}
+
+function renderPawns(){
+  document.querySelectorAll(".cell-pawns").forEach(p=>p.innerHTML="");
+  G.players.forEach(pl=>{
+    if(pl.pos>0){
+      const c=document.getElementById("pawns-"+pl.pos);
+      if(c) c.innerHTML+=`<span class="pawn">${pl.icon}</span>`;
+    }
+  });
+}
+
+function renderTurn(){
+  const pl=G.players[G.current];
+  document.getElementById("t-avatar").textContent=pl.icon;
+  document.getElementById("t-name").textContent=`Turno de ${pl.name}`;
+  document.getElementById("t-hint").textContent="Tira el dado para avanzar";
+  document.getElementById("t-dice").textContent="";
+  document.getElementById("roll-btn").disabled=false;
+}
+
+function addLog(msg){
+  G.logs.unshift(msg);
+  const log=document.getElementById("log");
+  log.innerHTML=G.logs.slice(0,8).map(m=>`<div class="log-entry">${m}</div>`).join("");
+}
+
+function highlightCell(n){
+  document.querySelectorAll(".cell").forEach(c=>c.classList.remove("active-cell"));
+  const c=document.getElementById("cell-"+n);
+  if(c) c.classList.add("active-cell");
+}
+
+function doRoll(){
+  document.getElementById("roll-btn").disabled=true;
+  const roll=Math.floor(Math.random()*6)+1;
+  const dice=["⚀","⚁","⚂","⚃","⚄","⚅"][roll-1];
+  document.getElementById("t-dice").textContent=dice;
+  const pl=G.players[G.current];
+  let np=pl.pos+roll;
+  if(np>TOTAL) np=TOTAL-(np-TOTAL);
+  document.getElementById("t-hint").textContent=`Sacó ${roll} → casilla ${np}`;
+  addLog(`${pl.icon} <b>${pl.name}</b> sacó ${roll} y avanza a casilla <b>${np}</b>`);
+  pl.pos=np;
+  renderPawns(); renderScoreboard(); highlightCell(np);
+
+  if(np===TOTAL){setTimeout(()=>showWinner(pl),400);return;}
+
+  setTimeout(()=>{
+    if(SNAKES[np]){
+      const d=SNAKES[np];
+      addLog(`🐍 <b>${pl.name}</b> cayó en serpiente — retrocede a casilla <b>${d}</b>`);
+      document.getElementById("t-hint").textContent=`🐍 ¡Serpiente! → casilla ${d}`;
+      setTimeout(()=>{pl.pos=d;renderPawns();renderScoreboard();highlightCell(d);setTimeout(nextTurn,700);},600);
+    } else if(LADDERS[np]){
+      const d=LADDERS[np];
+      addLog(`🪜 <b>${pl.name}</b> subió escalera — avanza a casilla <b>${d}</b>`);
+      document.getElementById("t-hint").textContent=`🪜 ¡Escalera! → casilla ${d}`;
+      setTimeout(()=>{pl.pos=d;renderPawns();renderScoreboard();highlightCell(d);if(d===TOTAL){showWinner(pl);}else{setTimeout(nextTurn,700);}},600);
+    } else if(Q_CELLS.includes(np)){
+      showQuestion();
+    } else {
+      setTimeout(nextTurn,400);
+    }
+  },400);
+}
+
+function pickQ(){
+  if(G.qPool.length===0) G.qPool=[...QUESTIONS];
+  const idx=Math.floor(Math.random()*G.qPool.length);
+  const q=G.qPool[idx];
+  G.qPool.splice(idx,1);
+  return q;
+}
+
+function showQuestion(){
+  const q=pickQ(); G.currentQ=q;
+  document.getElementById("q-badge").textContent=q.tema;
+  document.getElementById("q-diff").textContent=q.dif;
+  document.getElementById("q-stem").textContent=q.q;
+  document.getElementById("q-hint").textContent="Pista: "+q.hint;
+  const fb=document.getElementById("q-feedback");
+  fb.style.display="none"; fb.className="q-feedback";
+  const opts=document.getElementById("q-opts");
+  opts.innerHTML="";
+  q.opts.forEach((o,i)=>{
+    const b=document.createElement("button");
+    b.className="opt"; b.textContent=o;
+    b.onclick=()=>checkAns(i,b);
+    opts.appendChild(b);
+  });
+  document.getElementById("q-panel").style.display="block";
+  document.getElementById("t-hint").textContent="Responde la pregunta de matemática";
+}
+
+function checkAns(idx,btn){
+  const q=G.currentQ, pl=G.players[G.current];
+  document.querySelectorAll(".opt").forEach(b=>{b.onclick=null;b.disabled=true;});
+  const fb=document.getElementById("q-feedback");
+  if(idx===q.ans){
+    btn.classList.add("correct");
+    fb.className="q-feedback ok";
+    fb.textContent="¡Correcto! Te quedas en tu casilla. 🎉";
+    fb.style.display="block";
+    addLog(`✅ <b>${pl.name}</b> respondió correctamente en casilla ${pl.pos}`);
+    setTimeout(()=>{document.getElementById("q-panel").style.display="none";nextTurn();},1500);
+  } else {
+    btn.classList.add("wrong");
+    document.querySelectorAll(".opt")[q.ans].classList.add("correct");
+    const back=Math.max(1,pl.pos-3);
+    fb.className="q-feedback fail";
+    fb.textContent=`Incorrecto — retrocedes 3 casillas a la ${back}. La respuesta correcta era: "${q.opts[q.ans]}"`;
+    fb.style.display="block";
+    addLog(`❌ <b>${pl.name}</b> falló — retrocede de ${pl.pos} a ${back}`);
+    setTimeout(()=>{pl.pos=back;renderPawns();renderScoreboard();highlightCell(back);setTimeout(()=>{document.getElementById("q-panel").style.display="none";nextTurn();},800);},1800);
+  }
+}
+
+function nextTurn(){
+  document.querySelectorAll(".cell").forEach(c=>c.classList.remove("active-cell"));
+  G.current=(G.current+1)%G.players.length;
+  renderScoreboard();
+  renderTurn();
+}
+
+function showWinner(pl){
+  document.getElementById("turn-panel").style.display="none";
+  document.getElementById("q-panel").style.display="none";
+  document.getElementById("w-title").textContent=`${pl.icon} ${pl.name} gana POLY WARS!`;
+  document.getElementById("winner-panel").style.display="block";
+  addLog(`🏆 <b>${pl.name}</b> llegó a la META y ganó la partida`);
+}
+
+function resetToSetup(){
+  document.getElementById("winner-panel").style.display="none";
+  document.getElementById("scoreboard").style.display="none";
+  document.getElementById("board-section").style.display="none";
+  document.getElementById("turn-panel").style.display="none";
+  document.getElementById("log-panel").style.display="none";
+  document.getElementById("q-panel").style.display="none";
+  document.getElementById("setup").style.display="block";
+  buildInputs();
+}
+
+setNP(2);
+buildInputs();
+</script>
